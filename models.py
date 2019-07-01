@@ -32,3 +32,4 @@ class Transaction(Base):
     debit = Column(Numeric)
     # perhaps the above should just be....
     amount = Column(Numeric)
+    # with positive or negative values
