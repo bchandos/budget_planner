@@ -34,10 +34,23 @@ class JSONSettings():
         if popped:
             self.write_settings()
         elif strict:
-            raise KeyError('%s not in settings category %s, and strict mode enabled.' % (setting_name, category))
+            raise KeyError('%s not in settings category %s, and strict mode enabled.' % (
+                setting_name, category))
 
-    def get_setting(self, category, setting_name):
+    def get_setting(self, category, setting_name, strict=False):
         try:
             return self.settings[category][setting_name]
         except KeyError:
-            return None
+            if not strict:
+                return None
+            else:
+                pass
+
+    def get_category(self, category, strict=False):
+        try:
+            return self.settings[category]
+        except KeyError:
+            if not strict:
+                return None
+            else:
+                pass

@@ -1,4 +1,5 @@
 {
+    "root_path": "path/to/files/",
     "file_formats": {
         "file_format_name": {
             "filename_re": "regex string for matching file names",

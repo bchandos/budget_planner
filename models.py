@@ -1,5 +1,5 @@
+from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, Numeric, String
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, ForeignKey, Date, Numeric
 
 Base = declarative_base()
 
@@ -33,3 +33,5 @@ class Transaction(Base):
     # perhaps the above should just be....
     amount = Column(Numeric)
     # with positive or negative values
+    reconciled = Column(Boolean)
+    reconcile_to = Column(ForeignKey('transaction.id'))  # does this work?
