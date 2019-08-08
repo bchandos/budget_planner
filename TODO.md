@@ -1,2 +1,7 @@
 - Evaluate if transaction e-mails are superior to data downloads
     - Do they show final amount + tip, for e.g. or just the authorized amount
+- Create front end
+    - web app
+- Reconciliation logic
+- Reports
+    - Use visualization library?

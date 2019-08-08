@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 
 # an Engine, which the Session will use for connection
 # resources
-engine = create_engine('postgresql://scott:tiger@localhost/')
+engine = create_engine('sqlite:///budget.db')
 
 # create a configured "Session" class
 Session = sessionmaker(bind=engine)
