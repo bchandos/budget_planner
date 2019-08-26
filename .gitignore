@@ -129,3 +129,4 @@ dmypy.json
 # Project specific
 settings.json
 example_data/
+budget.db
