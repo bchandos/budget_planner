@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Test Upload</title>
+</head>
+<body>
+    <form action="/import_transactions" method="POST" enctype="multipart/form-data">
+        <input type="file" name="file_upload">
+        <select name="bank">
+            <option value="capital_one">Capital One 360</option>
+            <option value="capital_one_quicksilver">Capital One Quicksilver</option>
+            <option value="citi_costco">Citi Costco</option>
+        </select>
+        <input type="submit" value="upload the file">
+    </form>
+</body>
+</html>

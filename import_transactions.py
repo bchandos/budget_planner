@@ -23,9 +23,8 @@ def parse_upload(file_object):
     """
 
     # check integrity of data somehow
-    with open(file_object, newline='') as csv_file:
-        reader = csv.DictReader(csv_file)
-        return [row for row in reader]
+    reader = csv.DictReader(file_object)
+    return [row for row in reader]
     
 
 def import_all_transactions(csv_dict, bank):
@@ -47,6 +46,10 @@ def import_all_transactions(csv_dict, bank):
     with session_scope() as session:    
         for row in csv_dict:
             account = session.query(Account).filter(Account.name==bank).one_or_none()
+            if not account:
+                account = Account(name=bank)
+                session.add(account)
+                session.flush()
             trans_date = datetime.strptime(row.get(field_matchings.get('date')), settings.get_setting('file_formats', bank)['datetime_format'])
             if row.get(field_matchings.get('credit')):
                 credit = float(row.get(field_matchings.get('credit')))
