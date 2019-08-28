@@ -1,11 +1,13 @@
 import csv
 import os
 import re
-from datetime import datetime, date
+from datetime import date, datetime
 
-from json_settings import JSONSettings
-from models import Transaction, Account
+from sqlalchemy.exc import IntegrityError
+
 from db import session_scope
+from json_settings import JSONSettings
+from models import Account, Transaction
 
 settings = JSONSettings(
     'settings.json', settings_template='settings-example.json')
@@ -37,13 +39,15 @@ def import_all_transactions(csv_dict, bank):
     :type csv_dict: list
     :param bank: bank identifier
     :type bank: str
-    :returns: None
-    :rtype: None
+    :returns: added and skipped record counts
+    :rtype: dict
     :raise Exception: raises an exception
     """
 
     field_matchings = settings.get_setting('file_formats', bank)['field_matchings']
-    with session_scope() as session:    
+    with session_scope() as session:
+        added = 0
+        skipped = 0    
         for row in csv_dict:
             account = session.query(Account).filter(Account.name==bank).one_or_none()
             if not account:
@@ -66,4 +70,13 @@ def import_all_transactions(csv_dict, bank):
                                     credit=credit,
                                     debit=debit,
                                     amount=None)
-            session.add(transaction)
+            try:
+                session.add(transaction)
+                session.commit()
+            except IntegrityError:
+                session.rollback()
+                skipped += 1
+            else:
+                added += 1
+
+        return {'total': added + skipped, 'added': added, 'skipped': skipped}

@@ -1,7 +1,13 @@
-from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, Numeric, String
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, Numeric, String, UniqueConstraint
+from sqlalchemy.ext.declarative import as_declarative
+from sqlalchemy.inspection import inspect
 
-Base = declarative_base()
+@as_declarative()
+class Base:
+    def _asdict(self):
+        return {c.key: getattr(self, c.key)
+                for c in inspect(self).mapper.column_attrs}
+
 
 class User(Base):
     __tablename__ = 'user'
@@ -34,3 +40,4 @@ class Transaction(Base):
     # with positive or negative values
     reconciled = Column(Boolean)
     reconcile_to = Column(ForeignKey('transaction.id'))  # does this work?
+    UniqueConstraint(account, date, description, credit, debit, name='uix_1')
