@@ -1,16 +1,15 @@
 import csv
+import json
 import os
 import re
 from datetime import date, datetime
 
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 from db import session_scope
 from json_settings import JSONSettings
-from models import Account, Transaction
-
-settings = JSONSettings(
-    'settings.json', settings_template='settings-example.json')
+from models import Account, Transaction, AccountSettings
 
 def parse_upload(file_object):
     """
@@ -29,7 +28,7 @@ def parse_upload(file_object):
     return [row for row in reader]
     
 
-def import_all_transactions(csv_dict, bank):
+def import_all_transactions(csv_dict, account_id):
     """
     Given the DictReader results from the csv file import, as well as 
     the bank name, imports transactions to database. Uses bank's field
@@ -37,24 +36,22 @@ def import_all_transactions(csv_dict, bank):
     
     :param csv_dict: DictReader results from parse_upload
     :type csv_dict: list
-    :param bank: bank identifier
-    :type bank: str
+    :param account_id: account id
+    :type account_id: int
     :returns: added and skipped record counts
     :rtype: dict
     :raise Exception: raises an exception
     """
 
-    field_matchings = settings.get_setting('file_formats', bank)['field_matchings']
     with session_scope() as session:
+        settings = session.query(AccountSettings).filter(AccountSettings.account==account_id).one()
+        account = session.query(Account).get(account_id)
+        field_matchings = json.loads(settings.field_mappings)
+
         added = 0
         skipped = 0    
         for row in csv_dict:
-            account = session.query(Account).filter(Account.name==bank).one_or_none()
-            if not account:
-                account = Account(name=bank)
-                session.add(account)
-                session.flush()
-            trans_date = datetime.strptime(row.get(field_matchings.get('date')), settings.get_setting('file_formats', bank)['datetime_format'])
+            trans_date = datetime.strptime(row.get(field_matchings.get('date')), settings.date_format)
             if row.get(field_matchings.get('credit')):
                 credit = float(row.get(field_matchings.get('credit')))
             else:
@@ -64,7 +61,7 @@ def import_all_transactions(csv_dict, bank):
             else:
                 debit = 0
             transaction = Transaction(account=account.id,
-                                    date=trans_date.date(),
+                                    date=trans_date,
                                     description=row.get(field_matchings.get('description')),
                                     category=row.get(field_matchings.get('category')),
                                     credit=credit,

@@ -1,13 +1,31 @@
-from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, Numeric, String, UniqueConstraint
-from sqlalchemy.ext.declarative import as_declarative
+from decimal import Decimal
+from datetime import datetime, date
+
+import sqlalchemy.types as types
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, Numeric, String, UniqueConstraint, DateTime
+from sqlalchemy.ext.declarative import as_declarative, declarative_base
 from sqlalchemy.inspection import inspect
 
-@as_declarative()
-class Base:
-    def _asdict(self):
-        return {c.key: getattr(self, c.key)
-                for c in inspect(self).mapper.column_attrs}
 
+class B:
+    def _asdict(self, *args):
+        """Returns database objects as a dictionary. Optionally accepts
+        column names as args to convert to type_, which by default is string.
+        This is because bottle's built-in JSON serializer can't handle 
+        Date or Decimal objects."""
+        dict_ = {c.key: getattr(self, c.key)
+                for c in inspect(self).mapper.column_attrs}
+        for arg in args:
+            if isinstance(dict_[arg], Decimal):
+                dict_[arg] = float(dict_[arg])
+            elif isinstance(dict_[arg], datetime):
+                dict_[arg] = str(dict_[arg].isoformat())
+            elif isinstance(dict_[arg], date):
+                dict_[arg] = str(dict_[arg].isoformat())
+        return dict_
+
+
+Base = declarative_base(cls=B)
 
 class User(Base):
     __tablename__ = 'user'
@@ -24,13 +42,22 @@ class Account(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
 
+class AccountSettings(Base):
+    __tablename__ = 'account_settings'
+
+    id = Column(Integer, primary_key=True)
+    account = Column(ForeignKey('account.id'), nullable=False)
+    filename_re = Column(String)
+    debit_positive = Column(Boolean)
+    date_format = Column(String)
+    field_mappings = Column(String)
 
 class Transaction(Base):
     __tablename__ = 'transaction'
 
     id = Column(Integer, primary_key=True)
-    account = Column(ForeignKey('account.id'))
-    date = Column(Date)
+    account = Column(ForeignKey('account.id'), nullable=False)
+    date = Column(DateTime)
     description = Column(String)
     category = Column(String)
     credit = Column(Numeric)
