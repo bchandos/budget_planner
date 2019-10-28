@@ -30,6 +30,17 @@ app = Bottle()
 
 API_V = '/api/v0.1'
 
+@app.hook('after_request')
+def enable_cors():
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'PUT, GET, POST, DELETE'
+    response.headers['Access-Control-Allow-Headers'] = 'Origin, Accept, Content-Type, X-Requested-With, X-CSRF-Token'
+
+@app.route('/', method = 'OPTIONS')
+@app.route('/<path:path>', method = 'OPTIONS')
+def options_handler(path = None):
+    return
+
 @app.route(f'/{API_V}', method='GET')
 @app.route('/', method='GET')
 def upload_form():
@@ -40,22 +51,19 @@ def upload_form():
 @app.route(f'{API_V}/import_transactions', method='POST')
 def importer():
     upload = codecs.iterdecode(request.files.get('file_upload').file, 'utf-8') #pylint: disable=no-member
-    bank_name = request.forms.get('bank') #pylint: disable=no-member
+    bank_id = request.forms.get('bank_id') #pylint: disable=no-member
     parsed = parse_upload(upload)
     with session_scope() as session:
         try:
-            account = session.query(Account).filter(Account.name==bank_name).one()
-        except MultipleResultsFound:
-            raise
-        except NoResultFound:
-            account = Account(name=bank_name)
-            session.add(account)
-            session.commit()
-
-        import_stats = import_all_transactions(parsed, account.id)
-    
-    status = 'success'
-    return {'status': status, 'payload': import_stats}
+            account = session.query(Account).get(int(bank_id))
+        except Exception:
+            response.status = 404
+            return {'status': 'failed', 'payload': {'error_message': f'no account id {bank_id}'}}
+        else:
+            import_stats = import_all_transactions(parsed, account.id)
+            status = 'success'
+            response.status = 201
+            return {'status': status, 'payload': import_stats}
 
 @app.route(f'{API_V}/transactions', method='GET')
 @app.route(f'{API_V}/transactions/<account_id:int>', method='GET')
@@ -71,7 +79,7 @@ def transactions(account_id=None):
             payload = [row._asdict('date', 'credit', 'debit', 'amount') for row in trans]
         else:
             status = 'failed'
-            payload = {f'no account id {account_id}'}
+            payload = {'error_message': f'no account id {account_id}'}
             response.status = 404
             
     return {'status': status, 'payload': payload}
@@ -159,12 +167,14 @@ def transaction(trans_id=None):
                     response.status = 404
     elif request.method == 'DELETE' and trans_id:
         with session_scope() as session:
+            del_item = session.query(Transaction).get(trans_id)
             del_rows = session.query(Transaction).filter(Transaction.id==trans_id).delete()
             if del_rows > 1:
                 session.rollback()
         if del_rows == 1:
             status = 'success'
-            payload = {'message': f'successfully deleted transaction id {trans_id}'}
+            payload = del_item._asdict('date', 'credit', 'debit', 'amount')
+            # payload = {'message': f'successfully deleted transaction id {trans_id}'}
             response.status = 200
         else:
             status = 'failed'
@@ -184,11 +194,15 @@ def accounts(account_id=None):
         if account_id: 
             if request.method == 'GET':
                 # retrieve account by id
-                accounts = session.query(Account).get(account_id)
-                if accounts:
+                account = session.query(Account).get(account_id)
+                if account:
                     status = 'success'
                     payload = accounts._asdict()
                     response.status = 200
+                else:
+                    status = 'failed'
+                    payload = {'error_message': f'no account id {account_id}'}
+                    response.status = 404
             elif request.method == 'PUT':
                 # update existing account
                 pass
@@ -199,17 +213,40 @@ def accounts(account_id=None):
         elif request.method == 'GET':
             # get all accounts
             accounts = session.query(Account).all()
-            status = 'success'
-            payload = [row._asdict() for row in accounts]
-            response.status = 200
+            if accounts:
+                status = 'success'
+                payload = [row._asdict() for row in accounts]
+                response.status = 200
+            else:
+                status = 'success'
+                payload = []
+                response.status = 200
         elif request.method == 'POST':
             # create new account
-            pass
-
-        if not accounts:
-            status = 'failed'
-            payload = {'error_message': f'no account id {account_id}'}
-            response.status = 404
+            json_request = request.json
+            # remove any invalid column values
+            for k in list(json_request):
+                if k not in Account.__table__.columns.keys():               #pylint: disable=no-member
+                    json_request.pop(k)                                         #pylint: disable=no-member
+            # new accounts should not receive an id
+            if json_request.get('id'):                                          #pylint: disable=no-member
+                json_request.pop('id')  #pylint: disable=no-member
+            new_account = Account(**json_request)                   #pylint: disable=not-a-mapping
+            try:
+                session.add(new_account)
+                session.commit()
+            except IntegrityError as err:
+                session.rollback()
+                status = 'failed'
+                error_message = str(err).split(':')[0]
+                payload = {'error_message': error_message}
+                response.status = 400
+            else:
+                status = 'success'
+                payload = new_account._asdict()
+                response.status = 201
+        
+        
             
     return {'status': status, 'payload': payload}
 

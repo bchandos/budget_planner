@@ -44,12 +44,13 @@ def import_all_transactions(csv_dict, account_id):
     """
 
     with session_scope() as session:
-        settings = session.query(AccountSettings).filter(AccountSettings.account==account_id).one()
         account = session.query(Account).get(account_id)
+        settings = session.query(AccountSettings).filter(AccountSettings.account==account.id).one()
         field_matchings = json.loads(settings.field_mappings)
 
         added = 0
-        skipped = 0    
+        skipped = 0
+        new_transactions = list()
         for row in csv_dict:
             trans_date = datetime.strptime(row.get(field_matchings.get('date')), settings.date_format)
             if row.get(field_matchings.get('credit')):
@@ -75,5 +76,6 @@ def import_all_transactions(csv_dict, account_id):
                 skipped += 1
             else:
                 added += 1
+                new_transactions.append(transaction._asdict('date', 'credit', 'debit', 'amount'))
 
-        return {'total': added + skipped, 'added': added, 'skipped': skipped}
+        return {'total': added + skipped, 'added': added, 'skipped': skipped, 'new_transactions': new_transactions}
