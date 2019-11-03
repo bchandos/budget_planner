@@ -4,6 +4,7 @@ from datetime import datetime, date
 import sqlalchemy.types as types
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, Numeric, String, UniqueConstraint, DateTime
 from sqlalchemy.ext.declarative import as_declarative, declarative_base
+from sqlalchemy.orm import relationship
 from sqlalchemy.inspection import inspect
 
 
@@ -41,22 +42,19 @@ class Account(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
-
-class AccountSettings(Base):
-    __tablename__ = 'account_settings'
-
-    id = Column(Integer, primary_key=True)
-    account = Column(ForeignKey('account.id'), nullable=False)
+    # Settings
     filename_re = Column(String)
     debit_positive = Column(Boolean)
     date_format = Column(String)
     field_mappings = Column(String)
+    # Relationship
+    transactions = relationship('Transaction', cascade='all,delete')
 
 class Transaction(Base):
     __tablename__ = 'transaction'
 
     id = Column(Integer, primary_key=True)
-    account = Column(ForeignKey('account.id'), nullable=False)
+    account = Column(ForeignKey('account.id', ondelete='CASCADE'), nullable=False)
     date = Column(DateTime)
     description = Column(String)
     category = Column(String)

@@ -12,17 +12,17 @@ from sqlalchemy.inspection import inspect
 
 from db import session_scope
 from import_transactions import import_all_transactions, parse_upload
-from models import Account, Transaction, User, AccountSettings
+from models import Account, Transaction, User
 
 ### temp code to load my account settings when I nuke the DB which I do frequently on account of being a dumbass
 with session_scope() as session:
-    if not session.query(AccountSettings).filter(AccountSettings.account==1).one_or_none():
-        ax = AccountSettings(account=1,
-                            filename_re = r"Since (\D{3}) (\d+), (\d+).csv",
-                            debit_positive = True,
-                            date_format = "%m/%d/%Y",
-                            field_mappings = json.dumps({"account": None, "credit": "Credit", "debit": "Debit", "description": "Description", "date": "Date"}))
-        session.add(ax)
+    if not session.query(Account).filter(Account.name=='citi_costco').one_or_none():
+        a = Account(name='citi_costco',
+                    filename_re = r"Since (\D{3}) (\d+), (\d+).csv",
+                    debit_positive = True,
+                    date_format = "%m/%d/%Y",
+                    field_mappings = json.dumps({"account": None, "credit": "Credit", "debit": "Debit", "description": "Description", "date": "Date"}))
+        session.add(a)
         session.commit()
 #### end temp code
 
@@ -63,14 +63,16 @@ def importer():
             import_stats = import_all_transactions(parsed, account.id)
             status = 'success'
             response.status = 201
-            return {'status': status, 'payload': import_stats}
+            payload = import_stats
+
+        return {'status': status, 'payload': payload}
 
 @app.route(f'{API_V}/transactions', method='GET')
 @app.route(f'{API_V}/transactions/<account_id:int>', method='GET')
 def transactions(account_id=None):
     with session_scope() as session:
         if account_id:
-            trans = session.query(Transaction).filter(Transaction.account==account_id).all()
+            trans = session.query(Account).get(account_id).transactions
         else:
             trans = session.query(Transaction).all()
         
@@ -197,25 +199,56 @@ def accounts(account_id=None):
                 account = session.query(Account).get(account_id)
                 if account:
                     status = 'success'
-                    payload = accounts._asdict()
+                    payload = account._asdict()
                     response.status = 200
                 else:
                     status = 'failed'
                     payload = {'error_message': f'no account id {account_id}'}
                     response.status = 404
+            
             elif request.method == 'PUT':
-                # update existing account
-                pass
+                # update existing account and its settings
+                json_request = request.json
+                # updates shouldn't modify id
+                if json_request.get('id'): #pylint: disable=no-member
+                    json_request.pop('id') #pylint: disable=no-member
+                account = session.query(Account).get(account_id)
+                if not account:
+                    status = 'failed'
+                    payload = {'error_message': f'account id {account_id} does not exist'}
+                    response.status = 404
+                else:
+                    for k in json_request:
+                        setattr(account, k, json_request[k])
+                    status = 'success'
+                    payload = account._asdict()
+                    response.status = 201
+
             elif request.method == 'DELETE':
                 # delete existing account
-                pass
+                del_item = session.query(Account).get(account_id)
+                del_rows = session.query(Account).filter(Account.id==account_id).first()
+                try:
+                    session.delete(del_rows)
+                    session.commit()
+                except Exception as err:
+                    session.rollback()
+                    print(err)
+                    status = 'failed'
+                    payload = {'error_message': f'could not delete or does not exist id {account_id}'}
+                    response.status = 404
+                else:
+                    status = 'success'
+                    payload = del_item._asdict()
+                    # payload = {'message': f'successfully deleted transaction id {account_id}'}
+                    response.status = 200
 
         elif request.method == 'GET':
             # get all accounts
             accounts = session.query(Account).all()
             if accounts:
                 status = 'success'
-                payload = [row._asdict() for row in accounts]
+                payload = [account._asdict() for account in accounts]
                 response.status = 200
             else:
                 status = 'success'
@@ -246,8 +279,6 @@ def accounts(account_id=None):
                 payload = new_account._asdict()
                 response.status = 201
         
-        
-            
     return {'status': status, 'payload': payload}
 
 @app.route(f'{API_V}/transaction/<trans_id:int>/related', method='GET')

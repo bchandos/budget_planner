@@ -8,8 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 from db import session_scope
-from json_settings import JSONSettings
-from models import Account, Transaction, AccountSettings
+from models import Account, Transaction
 
 def parse_upload(file_object):
     """
@@ -45,14 +44,13 @@ def import_all_transactions(csv_dict, account_id):
 
     with session_scope() as session:
         account = session.query(Account).get(account_id)
-        settings = session.query(AccountSettings).filter(AccountSettings.account==account.id).one()
-        field_matchings = json.loads(settings.field_mappings)
+        field_matchings = json.loads(account.field_mappings)
 
         added = 0
         skipped = 0
         new_transactions = list()
         for row in csv_dict:
-            trans_date = datetime.strptime(row.get(field_matchings.get('date')), settings.date_format)
+            trans_date = datetime.strptime(row.get(field_matchings.get('date')), account.date_format)
             if row.get(field_matchings.get('credit')):
                 credit = float(row.get(field_matchings.get('credit')))
             else:

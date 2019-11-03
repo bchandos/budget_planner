@@ -6,3 +6,5 @@
 - Reconciliation logic
 - Reports
     - Use visualization library?
+- Combine Account and AccountSettings model
+    - although there is some basic for separation, functionally it just makes the logic more difficult
