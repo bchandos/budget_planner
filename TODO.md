@@ -1,4 +1,5 @@
 - Add API authentication
+- Add category API endpoints
 - Evaluate if transaction e-mails are superior to data downloads
     - Do they show final amount + tip, for e.g. or just the authorized amount
 - Create front end
@@ -6,5 +7,9 @@
 - Reconciliation logic
 - Reports
     - Use visualization library?
-- Combine Account and AccountSettings model
-    - although there is some basic for separation, functionally it just makes the logic more difficult
+- ~~Combine Account and AccountSettings model~~
+    - ~~although there is some basic for separation, functionally it just makes the logic more difficult~~
+- ~~Handle debit_positive transactions~~
+    - ~~What is the default? Do we return negatives or positives? Probably negatives...~~
+    - ~~Where do we handle this conversion? Probably in the asdict base~~
+    - ~~Actually ... let's do it on import and make our data correct, put it all in `amount`~~

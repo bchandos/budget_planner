@@ -78,7 +78,7 @@ def transactions(account_id=None):
         
         if trans:
             status = 'success'
-            payload = [row._asdict('date', 'credit', 'debit', 'amount') for row in trans]
+            payload = [row.asdict() for row in trans]
         else:
             status = 'failed'
             payload = {'error_message': f'no account id {account_id}'}
@@ -95,7 +95,7 @@ def transaction(trans_id=None):
                 trans = session.query(Transaction).get(trans_id)
                 if trans:
                     status = 'success'
-                    payload = trans._asdict('date', 'credit', 'debit', 'amount')
+                    payload = trans.asdict()
                 else:
                     status = 'failed'
                     payload = {'error_message': f'no transaction id {trans_id}'}
@@ -136,21 +136,21 @@ def transaction(trans_id=None):
                 response.status = 400
             else:
                 status = 'success'
-                payload = new_transaction._asdict('date', 'credit', 'debit', 'amount')
+                payload = new_transaction.asdict()
                 response.status = 201
 
     elif request.method == 'PUT' and trans_id and request.json:
         # update existing transaction id = trans_id
         json_request = request.json
         # format the date
-        if json_request.get('date'):            #pylint: disable=no-member
+        if json_request.get('date'): #pylint: disable=no-member
             json_request['date'] = dateparser.parse(json_request.get('date'))  #pylint: disable=unsupported-assignment-operation,no-member
         # should not be able to update an id
-        if json_request.get('id'):                                          #pylint: disable=no-member
-            json_request.pop('id')                                          #pylint: disable=no-member
+        if json_request.get('id'):  #pylint: disable=no-member
+            json_request.pop('id') #pylint: disable=no-member
         with session_scope() as session:
             try:
-                update = session.query(Transaction).filter(Transaction.id==trans_id).update(values=json_request)     #pylint: disable=not-a-mapping
+                update = session.query(Transaction).filter(Transaction.id==trans_id).update(values=json_request) #pylint: disable=not-a-mapping
             except IntegrityError as err:
                 session.rollback()
                 status = 'failed'
@@ -161,7 +161,7 @@ def transaction(trans_id=None):
                     session.commit()
                     status = 'success'
                     transaction = session.query(Transaction).get(trans_id)
-                    payload = transaction._asdict('date', 'credit', 'debit', 'amount')
+                    payload = transaction.asdict()
                     response.status = 201
                 else:
                     status = 'failed'
@@ -175,7 +175,7 @@ def transaction(trans_id=None):
                 session.rollback()
         if del_rows == 1:
             status = 'success'
-            payload = del_item._asdict('date', 'credit', 'debit', 'amount')
+            payload = del_item.asdict()
             # payload = {'message': f'successfully deleted transaction id {trans_id}'}
             response.status = 200
         else:
@@ -199,7 +199,7 @@ def accounts(account_id=None):
                 account = session.query(Account).get(account_id)
                 if account:
                     status = 'success'
-                    payload = account._asdict()
+                    payload = account.asdict()
                     response.status = 200
                 else:
                     status = 'failed'
@@ -218,10 +218,10 @@ def accounts(account_id=None):
                     payload = {'error_message': f'account id {account_id} does not exist'}
                     response.status = 404
                 else:
-                    for k in json_request:
-                        setattr(account, k, json_request[k])
+                    for k in json_request: #pylint: disable=not-an-iterable
+                        setattr(account, k, json_request[k]) #pylint: disable=unsubscriptable-object
                     status = 'success'
-                    payload = account._asdict()
+                    payload = account.asdict()
                     response.status = 201
 
             elif request.method == 'DELETE':
@@ -239,7 +239,7 @@ def accounts(account_id=None):
                     response.status = 404
                 else:
                     status = 'success'
-                    payload = del_item._asdict()
+                    payload = del_item.asdict()
                     # payload = {'message': f'successfully deleted transaction id {account_id}'}
                     response.status = 200
 
@@ -248,7 +248,7 @@ def accounts(account_id=None):
             accounts = session.query(Account).all()
             if accounts:
                 status = 'success'
-                payload = [account._asdict() for account in accounts]
+                payload = [account.asdict() for account in accounts]
                 response.status = 200
             else:
                 status = 'success'
@@ -259,12 +259,12 @@ def accounts(account_id=None):
             json_request = request.json
             # remove any invalid column values
             for k in list(json_request):
-                if k not in Account.__table__.columns.keys():               #pylint: disable=no-member
-                    json_request.pop(k)                                         #pylint: disable=no-member
+                if k not in Account.__table__.columns.keys(): #pylint: disable=no-member
+                    json_request.pop(k) #pylint: disable=no-member
             # new accounts should not receive an id
-            if json_request.get('id'):                                          #pylint: disable=no-member
-                json_request.pop('id')  #pylint: disable=no-member
-            new_account = Account(**json_request)                   #pylint: disable=not-a-mapping
+            if json_request.get('id'): #pylint: disable=no-member
+                json_request.pop('id') #pylint: disable=no-member
+            new_account = Account(**json_request) #pylint: disable=not-a-mapping
             try:
                 session.add(new_account)
                 session.commit()
@@ -276,7 +276,7 @@ def accounts(account_id=None):
                 response.status = 400
             else:
                 status = 'success'
-                payload = new_account._asdict()
+                payload = new_account.asdict()
                 response.status = 201
         
     return {'status': status, 'payload': payload}
@@ -289,8 +289,8 @@ def related_transactions(trans_id):
         if orig_trans:
             status = 'success'
             payload = dict()
-            payload['original_transaction'] = orig_trans._asdict('date', 'credit', 'debit', 'amount')
-            payload['related_transactions'] = [row._asdict('date', 'credit', 'debit', 'amount') for row in related_trans]
+            payload['original_transaction'] = orig_trans.asdict()
+            payload['related_transactions'] = [row.asdict() for row in related_trans]
             response.status = 200
         else:
             status = 'failed'
