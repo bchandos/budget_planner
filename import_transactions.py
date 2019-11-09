@@ -50,13 +50,16 @@ def import_all_transactions(csv_dict, account_id):
         skipped = 0
         new_transactions = list()
         for row in csv_dict:
+            amount = 0
             trans_date = datetime.strptime(row.get(field_matchings.get('date')), account.date_format)
             if row.get(field_matchings.get('credit')):
                 credit = float(row.get(field_matchings.get('credit')))
+                amount = credit
             else:
                 credit = 0
             if row.get(field_matchings.get('debit')):
                 debit = float(row.get(field_matchings.get('debit')))
+                amount = debit * -1 if account.debit_positive else debit
             else:
                 debit = 0
             transaction = Transaction(account=account.id,
@@ -65,7 +68,7 @@ def import_all_transactions(csv_dict, account_id):
                                     category=row.get(field_matchings.get('category')),
                                     credit=credit,
                                     debit=debit,
-                                    amount=None)
+                                    amount=amount)
             try:
                 session.add(transaction)
                 session.commit()
@@ -74,6 +77,6 @@ def import_all_transactions(csv_dict, account_id):
                 skipped += 1
             else:
                 added += 1
-                new_transactions.append(transaction._asdict('date', 'credit', 'debit', 'amount'))
+                new_transactions.append(transaction.asdict())
 
         return {'total': added + skipped, 'added': added, 'skipped': skipped, 'new_transactions': new_transactions}
