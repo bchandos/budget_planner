@@ -9,14 +9,14 @@ from sqlalchemy.inspection import inspect
 
 
 class B:
-    def _asdict(self, *args):
-        """Returns database objects as a dictionary. Optionally accepts
-        column names as args to convert to type_, which by default is string.
+    def asdict(self):
+        """Returns database objects as a dictionary. Checks each value
+        to see if is an instance of either Decimale or Datetime, and converts.
         This is because bottle's built-in JSON serializer can't handle 
         Date or Decimal objects."""
         dict_ = {c.key: getattr(self, c.key)
                 for c in inspect(self).mapper.column_attrs}
-        for arg in args:
+        for arg in dict_:
             if isinstance(dict_[arg], Decimal):
                 dict_[arg] = float(dict_[arg])
             elif isinstance(dict_[arg], datetime):
