@@ -46,7 +46,12 @@ class Account(Base):
     filename_re = Column(String)
     debit_positive = Column(Boolean)
     date_format = Column(String)
-    field_mappings = Column(String)
+    # Field Mappings
+    credit_map = Column(String)
+    debit_map = Column(String)
+    description_map = Column(String)
+    date_map = Column(String)
+    category_map = Column(String)
     # Relationship
     transactions = relationship('Transaction', cascade='all,delete')
 

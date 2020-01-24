@@ -44,28 +44,27 @@ def import_all_transactions(csv_dict, account_id):
 
     with session_scope() as session:
         account = session.query(Account).get(account_id)
-        field_matchings = json.loads(account.field_mappings)
 
         added = 0
         skipped = 0
         new_transactions = list()
         for row in csv_dict:
             amount = 0
-            trans_date = datetime.strptime(row.get(field_matchings.get('date')), account.date_format)
-            if row.get(field_matchings.get('credit')):
-                credit = float(row.get(field_matchings.get('credit')))
+            trans_date = datetime.strptime(row.get(account.date_map), account.date_format)
+            if row.get(account.credit_map):
+                credit = float(row.get(account.credit_map))
                 amount = credit
             else:
                 credit = 0
-            if row.get(field_matchings.get('debit')):
-                debit = float(row.get(field_matchings.get('debit')))
+            if row.get(account.debit_map):
+                debit = float(row.get(account.debit_map))
                 amount = debit * -1 if account.debit_positive else debit
             else:
                 debit = 0
             transaction = Transaction(account=account.id,
                                     date=trans_date,
-                                    description=row.get(field_matchings.get('description')),
-                                    category=row.get(field_matchings.get('category')),
+                                    description=row.get(account.description_map),
+                                    category=row.get(account.category_map),
                                     credit=credit,
                                     debit=debit,
                                     amount=amount)

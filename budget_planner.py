@@ -21,7 +21,10 @@ with session_scope() as session:
                     filename_re = r"Since (\D{3}) (\d+), (\d+).csv",
                     debit_positive = True,
                     date_format = "%m/%d/%Y",
-                    field_mappings = json.dumps({"account": None, "credit": "Credit", "debit": "Debit", "description": "Description", "date": "Date"}))
+                    credit_map = "Credit",
+                    debit_map = "Debit",
+                    description_map = "Description",
+                    date_map = "Date")
         session.add(a)
         session.commit()
 #### end temp code
