@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 from db import session_scope
-from models import Account, Transaction
+from models import Account, Transaction, AccountCategory, Category
 
 def parse_upload(file_object):
     """
@@ -61,10 +61,29 @@ def import_all_transactions(csv_dict, account_id):
                 amount = debit * -1 if account.debit_positive else debit
             else:
                 debit = 0
+            # Handle categories...
+            if row.get(account.category_map):
+                account_category = session.query(AccountCategory).filter(AccountCategory.name==row.get(account.category_map)).one_or_none()
+                if not account_category:
+                    account_category = AccountCategory(name=row.get(account.category_map), account=account.id)
+                    session.add(account_category)
+                    session.commit()
+                
+                if account_category.category:
+                    category = account_category.category
+                else:
+                    category = Category(name=account_category.name)
+                    account_category.category = category.id
+                    session.add(category)
+                    session.commit()
+                category_id = category.id
+            else:
+                category_id = None
+            
             transaction = Transaction(account=account.id,
                                     date=trans_date,
                                     description=row.get(account.description_map),
-                                    category=row.get(account.category_map),
+                                    category=category_id,
                                     credit=credit,
                                     debit=debit,
                                     amount=amount)

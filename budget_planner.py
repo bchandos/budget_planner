@@ -12,7 +12,7 @@ from sqlalchemy.inspection import inspect
 
 from db import session_scope
 from import_transactions import import_all_transactions, parse_upload
-from models import Account, Transaction, User
+from models import Account, Transaction, User, Category, AccountCategory
 
 ### temp code to load my account settings when I nuke the DB which I do frequently on account of being a dumbass
 with session_scope() as session:
@@ -300,6 +300,21 @@ def related_transactions(trans_id):
             payload = f'no transaction or related transactions id {trans_id}'
             response.status = 404
 
+        return {'status': status, 'payload': payload}
+
+@app.route(f'{API_V}/categories', method='GET')
+def categories():
+    with session_scope() as session:
+        categories = session.query(Category).all()
+        if categories:
+            status = 'success'
+            payload = [category.asdict() for category in categories]
+            response.status = 200
+        else:
+            status = 'success'
+            payload = []
+            response.status = 200
+        
         return {'status': status, 'payload': payload}
 
 run(app)

@@ -62,7 +62,7 @@ class Transaction(Base):
     account = Column(ForeignKey('account.id', ondelete='CASCADE'), nullable=False)
     date = Column(DateTime)
     description = Column(String)
-    category = Column(String)
+    category = Column(ForeignKey('category.id', ondelete='CASCADE'), nullable=True)
     credit = Column(Numeric)
     debit = Column(Numeric)
     # perhaps the above should just be....
@@ -71,3 +71,22 @@ class Transaction(Base):
     reconciled = Column(Boolean)
     reconcile_to = Column(ForeignKey('transaction.id'))  # does this work?
     UniqueConstraint(account, date, description, credit, debit, name='uix_1')
+
+
+class Category(Base):
+    __tablename__ = 'category'
+    # Describes a system level transaction category
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    # Relationship
+    transactions = relationship('Transaction')
+    account_categories = relationship('AccountCategory')
+
+
+class AccountCategory(Base):
+    __tablename__ = 'account_category'
+    # Describes a account defined category, to be matched with an interal category
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    account = Column(ForeignKey('account.id', ondelete='CASCADE'), nullable=False)
+    category = Column(ForeignKey('category.id', ondelete='CASCADE'), nullable=True)
