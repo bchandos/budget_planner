@@ -85,7 +85,7 @@ class Category(Base):
 
 class AccountCategory(Base):
     __tablename__ = 'account_category'
-    # Describes a account defined category, to be matched with an interal category
+    # Describes a account defined category, to be matched with an internal category
     id = Column(Integer, primary_key=True)
     name = Column(String)
     account = Column(ForeignKey('account.id', ondelete='CASCADE'), nullable=False)

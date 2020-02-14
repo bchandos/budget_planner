@@ -302,19 +302,44 @@ def related_transactions(trans_id):
 
         return {'status': status, 'payload': payload}
 
-@app.route(f'{API_V}/categories', method='GET')
+@app.route(f'{API_V}/categories', method=('GET', 'POST'))
 def categories():
     with session_scope() as session:
-        categories = session.query(Category).all()
-        if categories:
-            status = 'success'
-            payload = [category.asdict() for category in categories]
-            response.status = 200
-        else:
-            status = 'success'
-            payload = []
-            response.status = 200
-        
-        return {'status': status, 'payload': payload}
+        if request.method == 'GET':
+            categories = session.query(Category).all()
+            if categories:
+                status = 'success'
+                payload = [category.asdict() for category in categories]
+                response.status = 200
+            else:
+                status = 'success'
+                payload = []
+                response.status = 200
+        elif request.method == 'POST':
+            # create new category
+            json_request = request.json
+            # remove any invalid column values
+            for k in list(json_request):
+                if k not in Category.__table__.columns.keys(): #pylint: disable=no-member
+                    json_request.pop(k) #pylint: disable=no-member
+            # new categories should not receive an id
+            if json_request.get('id'): #pylint: disable=no-member
+                json_request.pop('id') #pylint: disable=no-member
+            new_category = Category(**json_request) #pylint: disable=not-a-mapping
+            try:
+                session.add(new_category)
+                session.commit()
+            except IntegrityError as err:
+                session.rollback()
+                status = 'failed'
+                error_message = str(err).split(':')[0]
+                payload = {'error_message': error_message}
+                response.status = 400
+            else:
+                status = 'success'
+                payload = new_category.asdict()
+                response.status = 201
+    
+    return {'status': status, 'payload': payload}
 
 run(app)
