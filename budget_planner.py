@@ -71,11 +71,14 @@ def importer():
         return {'status': status, 'payload': payload}
 
 @app.route(f'{API_V}/transactions', method='GET')
-@app.route(f'{API_V}/transactions/<account_id:int>', method='GET')
-def transactions(account_id=None):
+@app.route(f'{API_V}/transactions/account/<account_id:int>', method='GET')
+@app.route(f'{API_V}/transactions/category/<category_id:int>', method='GET')
+def transactions(account_id=None, category_id=None):
     with session_scope() as session:
         if account_id:
             trans = session.query(Account).get(account_id).transactions
+        elif category_id:
+            trans = session.query(Category).get(category_id).transactions
         else:
             trans = session.query(Transaction).all()
         
@@ -306,7 +309,7 @@ def related_transactions(trans_id):
 def categories():
     with session_scope() as session:
         if request.method == 'GET':
-            categories = session.query(Category).all()
+            categories = session.query(Category).order_by(Category.name).all()
             if categories:
                 status = 'success'
                 payload = [category.asdict() for category in categories]

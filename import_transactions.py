@@ -70,13 +70,15 @@ def import_all_transactions(csv_dict, account_id):
                     session.commit()
                 
                 if account_category.category:
-                    category = account_category.category
+                    category_id = account_category.category
                 else:
-                    category = Category(name=account_category.name)
+                    category = session.query(Category).filter(Category.name==account_category.name).one_or_none()
+                    if not category:
+                        category = Category(name=account_category.name)
+                        session.add(category)
+                        session.commit()
                     account_category.category = category.id
-                    session.add(category)
-                    session.commit()
-                category_id = category.id
+                    category_id = category.id
             else:
                 category_id = None
             
