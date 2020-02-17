@@ -287,20 +287,19 @@ def accounts(account_id=None):
         
     return {'status': status, 'payload': payload}
 
-@app.route(f'{API_V}/transaction/<trans_id:int>/related', method='GET')
-def related_transactions(trans_id):
+@app.route(f'{API_V}/transaction/<transaction_id:int>/related', method='GET')
+def related_transactions(transaction_id):
+    # Find transactions that may be related to another transaction
     with session_scope() as session:
-        orig_trans = session.query(Transaction).get(trans_id)
-        related_trans = session.query(Transaction).filter(Transaction.reconcile_to==trans_id).all()
-        if orig_trans:
+        transaction = session.query(Transaction).get(transaction_id)
+        related_transactions = session.query(Transaction).filter(or_(Transaction.amount==transaction.amount, Transaction.amount==-transaction.amount)).all()
+        if transaction:
             status = 'success'
-            payload = dict()
-            payload['original_transaction'] = orig_trans.asdict()
-            payload['related_transactions'] = [row.asdict() for row in related_trans]
+            payload = [row.asdict() for row in related_transactions if row.id != transaction_id]
             response.status = 200
         else:
             status = 'failed'
-            payload = f'no transaction or related transactions id {trans_id}'
+            payload = f'no transaction or related transactions id {transaction_id}'
             response.status = 404
 
         return {'status': status, 'payload': payload}
