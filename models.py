@@ -43,7 +43,6 @@ class Account(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     # Settings
-    filename_re = Column(String)
     debit_positive = Column(Boolean)
     date_format = Column(String)
     # Field Mappings
@@ -71,6 +70,8 @@ class Transaction(Base):
     reconciled = Column(Boolean)
     reconcile_to = Column(ForeignKey('transaction.id'))  # does this work?
     UniqueConstraint(account, date, description, credit, debit, name='uix_1')
+    # Relationship
+    reconciliations = relationship('Transaction')
 
 
 class Category(Base):
