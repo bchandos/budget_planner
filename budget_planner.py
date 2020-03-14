@@ -16,8 +16,8 @@ from models import Account, Transaction, User, Category, AccountCategory
 
 ### temp code to load my account settings when I nuke the DB which I do frequently on account of being a dumbass
 with session_scope() as session:
-    if not session.query(Account).filter(Account.name=='citi_costco').one_or_none():
-        a = Account(name='citi_costco',
+    if not session.query(Account).all():
+        a = Account(name='Citi Costco',
                     filename_re = r"Since (\D{3}) (\d+), (\d+).csv",
                     debit_positive = True,
                     date_format = "%m/%d/%Y",
@@ -25,7 +25,25 @@ with session_scope() as session:
                     debit_map = "Debit",
                     description_map = "Description",
                     date_map = "Date")
+        
+        b = Account(name='Capital One Checking',
+                    debit_positive = False,
+                    date_format = "%m/%d/%y",
+                    credit_map = "Credit",
+                    debit_map = "Debit",
+                    description_map = "Description",
+                    date_map = "Posted Date")
+        c = Account(name='Capital One Quicksilver',
+                    debit_positive = True,
+                    date_format = "%m/%d/%Y",
+                    credit_map = " Credit",
+                    debit_map = " Debit",
+                    description_map = " Description",
+                    date_map = " Transaction Date",
+                    category_map = " Category")
         session.add(a)
+        session.add(b)
+        session.add(c)
         session.commit()
 #### end temp code
 
@@ -63,13 +81,10 @@ def importer():
             response.status = 404
             return {'status': 'failed', 'payload': {'error_message': f'no account id {bank_id}'}}
         else:
-            import_stats = import_all_transactions(parsed, account.id)
-            status = 'success'
-            response.status = 201
-            payload = import_stats
-
-        return {'status': status, 'payload': payload}
-
+            import_response = import_all_transactions(parsed, account.id)
+            response.status = 201 if import_response.get('status') == 'success' else 404
+            return import_response
+        
 @app.route(f'{API_V}/transactions', method='GET')
 @app.route(f'{API_V}/transactions/account/<account_id:int>', method='GET')
 @app.route(f'{API_V}/transactions/category/<category_id:int>', method='GET')
@@ -195,6 +210,22 @@ def transaction(trans_id=None):
         response.status = 400
     return {'status': status, 'payload': payload}
 
+@app.route(f'{API_V}/transaction/<trans_id:int>/reconciliations', method=('GET',))
+def reconciliations(trans_id):
+    with session_scope() as session:
+        transaction = session.query(Transaction).get(trans_id)
+        if transaction:
+            reconciliations = transaction.reconciliations
+            payload = [r.asdict() for r in reconciliations]
+            status = 'success'
+            response.status = 200
+        else:
+            status = 'failed'
+            payload = {'error_message': f'no transaction id {trans_id}'}
+            response.status = 404
+
+    return {'status': status, 'payload': payload}
+
 @app.route(f'{API_V}/accounts', method=('GET', 'POST'))
 @app.route(f'{API_V}/accounts/<account_id:int>', method=('GET', 'PUT', 'DELETE'))
 def accounts(account_id=None):
@@ -292,7 +323,7 @@ def related_transactions(transaction_id):
     # Find transactions that may be related to another transaction
     with session_scope() as session:
         transaction = session.query(Transaction).get(transaction_id)
-        related_transactions = session.query(Transaction).filter(or_(Transaction.amount==transaction.amount, Transaction.amount==-transaction.amount)).all()
+        related_transactions = session.query(Transaction).filter(Transaction.amount==-transaction.amount, Transaction.account!=transaction.account).all()
         if transaction:
             status = 'success'
             payload = [row.asdict() for row in related_transactions if row.id != transaction_id]
