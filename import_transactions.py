@@ -44,6 +44,19 @@ def import_all_transactions(csv_dict, account_id):
 
     with session_scope() as session:
         account = session.query(Account).get(account_id)
+        # Sanity check to confirm the account we've provided matches
+        # the CSV data provided
+        field_maps = [account.credit_map,
+                      account.debit_map,
+                      account.description_map,
+                      account.date_map,
+                      account.category_map]
+        errors = 0
+        for field_map in field_maps:
+            if field_map not in csv_dict[0].keys():
+                errors += 1
+        if errors > 1: # we'll allow one field to be off?
+            return {'status': 'failed', 'payload': {'error_message': 'field mapping does not align with uploaded file'}}
 
         added = 0
         skipped = 0
@@ -99,4 +112,10 @@ def import_all_transactions(csv_dict, account_id):
                 added += 1
                 new_transactions.append(transaction.asdict())
 
-        return {'total': added + skipped, 'added': added, 'skipped': skipped, 'new_transactions': new_transactions}
+        return {'status': 'success', 
+                'payload': 
+                    {'total': added + skipped, 
+                    'added': added, 
+                    'skipped': skipped, 
+                    'new_transactions': new_transactions}
+                }
