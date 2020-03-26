@@ -18,7 +18,6 @@ from models import Account, Transaction, User, Category, AccountCategory
 with session_scope() as session:
     if not session.query(Account).all():
         a = Account(name='Citi Costco',
-                    filename_re = r"Since (\D{3}) (\d+), (\d+).csv",
                     debit_positive = True,
                     date_format = "%m/%d/%Y",
                     credit_map = "Credit",
@@ -99,7 +98,7 @@ def transactions(account_id=None, category_id=None):
         
         if trans:
             status = 'success'
-            payload = [row.asdict() for row in trans]
+            payload = [row.asdict('account') for row in trans]
         else:
             status = 'failed'
             payload = {'error_message': f'no account id {account_id}'}

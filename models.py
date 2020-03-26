@@ -9,21 +9,31 @@ from sqlalchemy.inspection import inspect
 
 
 class B:
-    def asdict(self):
+    def asdict(self, *args):
         """Returns database objects as a dictionary. Checks each value
         to see if is an instance of either Decimale or Datetime, and converts.
         This is because bottle's built-in JSON serializer can't handle 
         Date or Decimal objects."""
-        dict_ = {c.key: getattr(self, c.key)
-                for c in inspect(self).mapper.column_attrs}
-        for arg in dict_:
-            if isinstance(dict_[arg], Decimal):
-                dict_[arg] = float(dict_[arg])
-            elif isinstance(dict_[arg], datetime):
-                dict_[arg] = str(dict_[arg].isoformat())
-            elif isinstance(dict_[arg], date):
-                dict_[arg] = str(dict_[arg].isoformat())
-        return dict_
+        return_dict = {c.key: getattr(self, c.key)
+                       for c in inspect(self).mapper.column_attrs}
+        # fk_dict = {c.key: c.foreign_keys.pop()
+        #            for c in inspect(self).mapper.columns if c.foreign_keys}
+        for key, val in return_dict.items():
+            if isinstance(val, Decimal):
+                return_dict[key] = float(val)
+            elif isinstance(val, datetime):
+                return_dict[key] = val.isoformat()
+            elif isinstance(val, date):
+                return_dict[key] = str(val.isoformat())
+            elif isinstance(val, bytes):
+                return_dict[key] = None
+            elif args:
+                for arg in args:
+                    if key == f'{arg}_id':
+                        rel = getattr(self, arg)
+                        return_dict[key] = rel.asdict()
+
+        return return_dict
 
 
 Base = declarative_base(cls=B)
@@ -58,7 +68,7 @@ class Transaction(Base):
     __tablename__ = 'transaction'
 
     id = Column(Integer, primary_key=True)
-    account = Column(ForeignKey('account.id', ondelete='CASCADE'), nullable=False)
+    account_id = Column(ForeignKey('account.id', ondelete='CASCADE'), nullable=False)
     date = Column(DateTime)
     description = Column(String)
     category = Column(ForeignKey('category.id', ondelete='CASCADE'), nullable=True)
@@ -69,9 +79,10 @@ class Transaction(Base):
     # with positive or negative values
     reconciled = Column(Boolean)
     reconcile_to = Column(ForeignKey('transaction.id'))  # does this work?
-    UniqueConstraint(account, date, description, credit, debit, name='uix_1')
+    UniqueConstraint(account_id, date, description, credit, debit, name='uix_1')
     # Relationship
     reconciliations = relationship('Transaction')
+    account = relationship('Account')
 
 
 class Category(Base):
