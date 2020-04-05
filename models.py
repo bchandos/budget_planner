@@ -31,7 +31,7 @@ class B:
                 for arg in args:
                     if key == f'{arg}_id':
                         rel = getattr(self, arg)
-                        return_dict[key] = rel.asdict()
+                        return_dict[key] = rel.asdict() if rel else {}
 
         return return_dict
 
@@ -71,7 +71,7 @@ class Transaction(Base):
     account_id = Column(ForeignKey('account.id', ondelete='CASCADE'), nullable=False)
     date = Column(DateTime)
     description = Column(String)
-    category = Column(ForeignKey('category.id', ondelete='CASCADE'), nullable=True)
+    category_id = Column(ForeignKey('category.id', ondelete='CASCADE'), nullable=True)
     credit = Column(Numeric)
     debit = Column(Numeric)
     # perhaps the above should just be....
@@ -83,6 +83,7 @@ class Transaction(Base):
     # Relationship
     reconciliations = relationship('Transaction')
     account = relationship('Account')
+    category = relationship('Category')
 
 
 class Category(Base):
@@ -97,7 +98,7 @@ class Category(Base):
 
 class AccountCategory(Base):
     __tablename__ = 'account_category'
-    # Describes a account defined category, to be matched with an internal category
+    # Describes an account defined category, to be matched with an internal category
     id = Column(Integer, primary_key=True)
     name = Column(String)
     account = Column(ForeignKey('account.id', ondelete='CASCADE'), nullable=False)

@@ -98,7 +98,7 @@ def import_all_transactions(csv_dict, account_id):
             transaction = Transaction(account_id=account.id,
                                     date=trans_date,
                                     description=row.get(account.description_map),
-                                    category=category_id,
+                                    category_id=category_id,
                                     credit=credit,
                                     debit=debit,
                                     amount=amount)
@@ -110,7 +110,7 @@ def import_all_transactions(csv_dict, account_id):
                 skipped += 1
             else:
                 added += 1
-                new_transactions.append(transaction.asdict('account'))
+                new_transactions.append(transaction.asdict('account', 'category'))
 
         return {'status': 'success', 
                 'payload': 

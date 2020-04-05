@@ -98,7 +98,7 @@ def transactions(account_id=None, category_id=None):
         
         if trans:
             status = 'success'
-            payload = [row.asdict('account') for row in trans]
+            payload = [row.asdict('account', 'category') for row in trans]
         else:
             status = 'failed'
             payload = {'error_message': f'no account id {account_id}'}
@@ -115,7 +115,7 @@ def transaction(trans_id=None):
                 trans = session.query(Transaction).get(trans_id)
                 if trans:
                     status = 'success'
-                    payload = trans.asdict()
+                    payload = trans.asdict('account', 'category')
                 else:
                     status = 'failed'
                     payload = {'error_message': f'no transaction id {trans_id}'}
@@ -156,7 +156,7 @@ def transaction(trans_id=None):
                 response.status = 400
             else:
                 status = 'success'
-                payload = new_transaction.asdict()
+                payload = new_transaction.asdict('account', 'category')
                 response.status = 201
 
     elif request.method == 'PUT' and trans_id and request.json:
@@ -181,7 +181,7 @@ def transaction(trans_id=None):
                     session.commit()
                     status = 'success'
                     transaction = session.query(Transaction).get(trans_id)
-                    payload = transaction.asdict()
+                    payload = transaction.asdict('account', 'category')
                     response.status = 201
                 else:
                     status = 'failed'
