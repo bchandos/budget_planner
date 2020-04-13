@@ -168,6 +168,10 @@ def transaction(trans_id=None):
         # should not be able to update an id
         if json_request.get('id'):  #pylint: disable=no-member
             json_request.pop('id') #pylint: disable=no-member
+        for k, v in json_request.items():
+            # serialized related objects need to be deserialized
+            if k.endswith('_id') and type(v) == dict:
+                json_request[k] = v.get('id')               
         with session_scope() as session:
             try:
                 update = session.query(Transaction).filter(Transaction.id==trans_id).update(values=json_request) #pylint: disable=not-a-mapping
@@ -248,6 +252,10 @@ def accounts(account_id=None):
                 # updates shouldn't modify id
                 if json_request.get('id'): #pylint: disable=no-member
                     json_request.pop('id') #pylint: disable=no-member
+                for k, v in json_request.items():
+                    # serialized related objects need to be deserialized
+                    if k.endswith('_id') and type(v) == dict:
+                        json_request[k] = v.get('id')
                 account = session.query(Account).get(account_id)
                 if not account:
                     status = 'failed'
