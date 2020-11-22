@@ -1,3 +1,5 @@
+# pylint: disable=no-member
+
 from contextlib import contextmanager
 
 from sqlalchemy import create_engine

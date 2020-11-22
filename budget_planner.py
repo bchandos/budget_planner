@@ -1,3 +1,5 @@
+# pylint: disable=no-member
+
 import codecs
 import csv
 import json
@@ -17,32 +19,14 @@ from models import Account, Transaction, User, Category, AccountCategory
 ### temp code to load my account settings when I nuke the DB which I do frequently on account of being a dumbass
 with session_scope() as session:
     if not session.query(Account).all():
-        a = Account(name='Citi Costco',
+        a = Account(name='AnyBank Inc.',
                     debit_positive = True,
                     date_format = "%m/%d/%Y",
                     credit_map = "Credit",
                     debit_map = "Debit",
                     description_map = "Description",
                     date_map = "Date")
-        
-        b = Account(name='Capital One Checking',
-                    debit_positive = False,
-                    date_format = "%m/%d/%y",
-                    credit_map = "Credit",
-                    debit_map = "Debit",
-                    description_map = "Description",
-                    date_map = "Posted Date")
-        c = Account(name='Capital One Quicksilver',
-                    debit_positive = True,
-                    date_format = "%m/%d/%Y",
-                    credit_map = " Credit",
-                    debit_map = " Debit",
-                    description_map = " Description",
-                    date_map = " Transaction Date",
-                    category_map = " Category")
         session.add(a)
-        session.add(b)
-        session.add(c)
         session.commit()
 #### end temp code
 
@@ -161,7 +145,7 @@ def transaction(trans_id=None):
 
     elif request.method == 'PUT' and trans_id and request.json:
         # update existing transaction id = trans_id
-        json_request = request.json
+        json_request = request.json     #pylint: disable=not-a-mapping
         # format the date
         if json_request.get('date'): #pylint: disable=no-member
             json_request['date'] = dateparser.parse(json_request.get('date'))  #pylint: disable=unsupported-assignment-operation,no-member
@@ -171,7 +155,7 @@ def transaction(trans_id=None):
         for k, v in json_request.items():
             # serialized related objects need to be deserialized
             if k.endswith('_id') and type(v) == dict:
-                json_request[k] = v.get('id')               
+                json_request[k] = v.get('id')          #pylint: disable=unsupported-assignment-operation      
         with session_scope() as session:
             try:
                 update = session.query(Transaction).filter(Transaction.id==trans_id).update(values=json_request) #pylint: disable=not-a-mapping
@@ -255,7 +239,7 @@ def accounts(account_id=None):
                 for k, v in json_request.items():
                     # serialized related objects need to be deserialized
                     if k.endswith('_id') and type(v) == dict:
-                        json_request[k] = v.get('id')
+                        json_request[k] = v.get('id')   #pylint: disable=unsupported-assignment-operation
                 account = session.query(Account).get(account_id)
                 if not account:
                     status = 'failed'
