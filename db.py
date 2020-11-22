@@ -8,7 +8,10 @@ from sqlalchemy.orm import sessionmaker
 from models import Base
 
 # an Engine, which the Session will use for connection resources
-engine = create_engine('sqlite:///budget.db')
+# For demo purposes, use in memory sqlite DB
+engine = create_engine('sqlite://')
+# Real connection here, e.g...
+# engine = create_engine('mysql://db_user:tiger@hostname/dbname', encoding='latin1', echo=True)
 
 # create a configured "Session" class
 Session = sessionmaker(bind=engine)

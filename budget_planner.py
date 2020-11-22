@@ -16,19 +16,24 @@ from db import session_scope
 from import_transactions import import_all_transactions, parse_upload
 from models import Account, Transaction, User, Category, AccountCategory
 
-### temp code to load my account settings when I nuke the DB which I do frequently on account of being a dumbass
+#### For Demo purposes, load fake data
+
+from demo_data import FAKE_DATA
+
 with session_scope() as session:
     if not session.query(Account).all():
-        a = Account(name='AnyBank Inc.',
-                    debit_positive = True,
-                    date_format = "%m/%d/%Y",
-                    credit_map = "Credit",
-                    debit_map = "Debit",
-                    description_map = "Description",
-                    date_map = "Date")
-        session.add(a)
+        # Add a fake account
+        for account in FAKE_DATA['fake_accounts']:
+            a = Account(**account)
+            session.add(a)
+        for category in FAKE_DATA['fake_categories']:
+            c = Category(**category)
+            session.add(c)
+        for transaction in FAKE_DATA['fake_transactions']:
+            t = Transaction(**transaction)
+            session.add(t)
         session.commit()
-#### end temp code
+#### End Demo Code
 
 app = Bottle()
 
@@ -85,7 +90,7 @@ def transactions(account_id=None, category_id=None):
             payload = [row.asdict('account', 'category') for row in trans]
         else:
             status = 'failed'
-            payload = {'error_message': f'no account id {account_id}'}
+            payload = {'error_message': f'no transactions'}
             response.status = 404
             
     return {'status': status, 'payload': payload}
@@ -366,4 +371,4 @@ def categories():
     
     return {'status': status, 'payload': payload}
 
-run(app)
+run(app, server='gunicorn')
