@@ -51,12 +51,12 @@ def enable_cors():
 def options_handler(path = None):
     return
 
-@app.route(f'/{API_V}', method='GET')
+@app.route(f'{API_V}', method='GET')
 @app.route('/', method='GET')
 def upload_form():
-    with open('upload_form.html') as f:
-        x = f.readlines()
-    return x
+    # with open('upload_form.html') as f:
+    #     x = f.readlines()
+    return None
 
 @app.route(f'{API_V}/import_transactions', method='POST')
 def importer():
