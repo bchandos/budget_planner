@@ -371,4 +371,4 @@ def categories():
     
     return {'status': status, 'payload': payload}
 
-run(app, server='gunicorn')
+run(app, host='0.0.0.0', server='gunicorn')
